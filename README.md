@@ -1,50 +1,97 @@
-## BloodBridge AI
+# 🩸 BloodBridge AI
 
-BloodBridge AI is a multi-agent donor discovery system for matching patients with
-suitable blood donors. It includes routing, blood-group matching, donor ranking,
-eligibility support, notifications, and an offline evaluator for measuring donor
-recommendation quality.
+BloodBridge AI is a multi-agent system that connects patients in need of blood with matching, available donors — using a LangGraph agent pipeline, a RAG-based eligibility assistant, and a Gradio chat interface.
 
-## Donor Recommendation Evaluation
+## Overview
 
-Run the offline evaluator:
+A patient describes what they need in plain language (e.g. *"I need O+ blood urgently in Bangalore"*), and BloodBridge AI:
 
+1. Classifies the intent of the message (blood request, donor registration, eligibility question, or general chat)
+2. Extracts the blood group and location from the message
+3. Finds and ranks matching, available donors by blood compatibility, distance, and recency of last donation
+4. Notifies the top donors and lets them accept or decline the request
+5. Answers eligibility questions (e.g. *"Can I donate after getting a tattoo?"*) using a retrieval-augmented pipeline grounded in donation guidelines and live donor/patient data
+
+## Architecture
+
+The core is a **LangGraph** state graph coordinating six agents:
+
+| Agent | Responsibility |
+|---|---|
+| **Router** | Classifies user intent (blood request / registration / eligibility / general chat) via an LLM |
+| **Matching** | Extracts the requested blood group and finds compatible, available donors |
+| **Ranking** | Ranks matched donors by distance and city match |
+| **Eligibility** | Answers donation eligibility questions using RAG over guideline documents and DB records |
+| **Notification** | Notifies top-ranked donors of a matching request |
+| **Coordinator** | Generates the final natural-language reply and manages donor registration flow |
+
+**RAG pipeline**: Donor/patient records and a blood donation guidelines document are chunked, embedded with Hugging Face sentence-transformers, and stored in a **Chroma** vector store for grounded eligibility answers.
+
+**LLM routing**: Intent classification and reply generation run through **OpenRouter** (`gpt-4.1-mini`), so no direct OpenAI key is required.
+
+## Tech Stack
+
+- **Orchestration**: LangGraph, LangChain
+- **UI**: Gradio
+- **API layer**: FastAPI
+- **LLM**: OpenRouter (GPT-4.1-mini)
+- **Vector store**: Chroma + Hugging Face sentence-transformers embeddings
+- **Database**: SQLAlchemy (SQLite by default)
+- **Package management**: [uv](https://docs.astral.sh/uv/)
+
+## Project Structure
+
+## Getting Started
+
+### Prerequisites
+- Python 3.13+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager
+- An [OpenRouter](https://openrouter.ai/) API key
+
+### Setup
+
+1. Clone the repository
 ```bash
-python evaluate_donor_recommendations.py
+   git clone https://github.com/MdSalahuddin008/BloodBridge-AI.git
+   cd BloodBridge-AI
 ```
 
-Machine-readable output:
-
+2. Install dependencies
 ```bash
-python evaluate_donor_recommendations.py --json
+   uv sync
 ```
 
-The evaluator treats each patient in `patients.json` as a recommendation query and
-each donor in `donors.json` as a candidate. It uses the production ranking agent
-for recommendations, then grades the output with an independent relevance function
-based on:
+3. Configure environment variables — copy `.env.example` to `.env` and add your key:
+```bash
+   cp .env.example .env
+```
 
-- exact blood-group match
-- donor availability
-- same-city/local match
-- age eligibility
-- minimum weight
-- donation cooldown
-- geographic distance
 
-Reported metrics include:
 
-- `Precision@K`: fraction of the Top-K recommendations that are relevant
-- `Recall@K`: fraction of all relevant donors recovered in the Top-K
-- `HitRate@K`: whether at least one relevant donor appears in the Top-K
-- `NDCG@K`: ranking quality with graded relevance
-- `MRR`: how early the first relevant donor appears
-- `MAP@K`: average precision across the ranked list
-- `Top-1 accuracy`: whether the first donor is among the best available choices
-- blood group, availability, city, and clinical eligibility constraint checks
+4. Initialize the database and load sample data
+```bash
+   uv run python -m app.database.init_db
+   uv run python -m app.database.import_data
+```
 
-Resume phrasing:
+5. Launch the app
+```bash
+   uv run python -m app.app
+```
+   This starts the Gradio interface and builds the vector store on launch.
 
-> Built an offline recommendation evaluator for a multi-agent blood-donor matching
-> system using Precision@K, Recall@K, NDCG@K, MRR, MAP@K, Top-1 accuracy, and
-> clinical constraint validation.
+## Evaluation
+
+Donor recommendation quality can be evaluated against the sample datasets:
+
+```bash
+uv run python evaluate_donor_recommendations.py
+```
+
+## Disclaimer
+
+BloodBridge AI is a portfolio/demo project. `donors.json` and `patients.json` contain synthetic sample data only, and the eligibility guidance provided by the assistant is not a substitute for professional medical advice.
+
+## Author
+
+Built by [MdSalahuddin008](https://github.com/MdSalahuddin008)
