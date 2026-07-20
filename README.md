@@ -12,6 +12,26 @@ A patient describes what they need in plain language (e.g. *"I need O+ blood urg
 4. Notifies the top donors and lets them accept or decline the request
 5. Answers eligibility questions (e.g. *"Can I donate after getting a tattoo?"*) using a retrieval-augmented pipeline grounded in donation guidelines and live donor/patient data
 
+## Application Preview
+
+### Donor Registration
+
+<p align="center">
+  <img src="asset/image001.png" alt="BloodBridge AI Donor Registration" width="900">
+</p>
+
+### Registration Completed
+
+<p align="center">
+  <img src="asset/image002.png" alt="BloodBridge AI Registration Complete" width="900">
+</p>
+
+### Blood Request & Donor Matching
+
+<p align="center">
+  <img src="asset/image003.png" alt="BloodBridge AI Donor Matching" width="900">
+</p>
+
 ## Architecture
 
 The core is a **LangGraph** state graph coordinating six agents:
